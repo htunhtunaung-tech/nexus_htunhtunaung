@@ -1,9 +1,21 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 
-export default async function DashboardPage() {
+export default function DashboardPage() {
+  return (
+    <main className="mx-auto max-w-3xl p-6">
+      <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
+        <Welcome />
+      </Suspense>
+    </main>
+  );
+}
+
+// Reads the logged-in user, so it renders per request inside Suspense
+async function Welcome() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -18,7 +30,7 @@ export default async function DashboardPage() {
     .single();
 
   return (
-    <main className="mx-auto max-w-3xl p-6">
+    <>
       <h1 className="text-2xl font-semibold">
         Welcome, {profile?.display_name ?? user.email}
       </h1>
@@ -28,6 +40,6 @@ export default async function DashboardPage() {
           Log out
         </Button>
       </form>
-    </main>
+    </>
   );
 }
