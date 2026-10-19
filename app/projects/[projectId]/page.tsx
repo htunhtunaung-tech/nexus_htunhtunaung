@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { updateProject } from "./actions";
 import { EditProjectForm } from "@/components/projects/edit-project-form";
 import { ArchiveProjectButton } from "@/components/projects/archive-project-button";
+import { Milestones, type Milestone } from "@/components/projects/milestones";
 import { Button } from "@/components/ui/button";
 
 type Props = { params: Promise<{ projectId: string }> };
@@ -44,13 +45,18 @@ async function ProjectContent({ params }: Props) {
     .maybeSingle();
   if (!project) notFound();
 
-  const { data: taskRows } = await supabase
-    .from("tasks")
-    .select("status, due_date")
-    .eq("project_id", project.id)
-    .limit(1000);
+  const [{ data: taskRows }, { data: milestoneRows }] = await Promise.all([
+    supabase.from("tasks").select("status, due_date").eq("project_id", project.id).limit(1000),
+    supabase
+      .from("milestones")
+      .select("id, title, description, due_date, completed_at")
+      .eq("project_id", project.id)
+      .order("due_date", { ascending: true, nullsFirst: false })
+      .limit(100),
+  ]);
 
   const tasks = taskRows ?? [];
+  const milestones = (milestoneRows ?? []) as Milestone[];
   const today = new Date().toISOString().slice(0, 10);
   const total = tasks.length;
   const done = tasks.filter((t) => t.status === "done").length;
@@ -115,6 +121,13 @@ async function ProjectContent({ params }: Props) {
           <Link href={`/projects/${project.id}/tasks`}>Open task board</Link>
         </Button>
       </section>
+
+      <Milestones
+        projectId={project.id}
+        milestones={milestones}
+        today={today}
+        readOnly={project.archived_at !== null}
+      />
 
       {!project.archived_at && (
         <>
