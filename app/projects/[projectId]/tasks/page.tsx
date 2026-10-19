@@ -90,7 +90,7 @@ async function TasksContent({ params }: Props) {
 
       <section
         aria-label="Task board"
-        className="grid auto-cols-[minmax(240px,1fr)] grid-flow-col gap-4 overflow-x-auto pb-4"
+        className="grid auto-cols-[minmax(200px,1fr)] grid-flow-col gap-4 overflow-x-auto pb-4"
       >
         {TASK_STATUSES.map((status) => {
           const columnTasks = tasks.filter((t) => t.status === status);
