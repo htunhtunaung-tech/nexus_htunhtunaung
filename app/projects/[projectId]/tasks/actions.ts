@@ -107,3 +107,99 @@ export async function updateTaskStatus(
   revalidatePath(`/projects/${task.project_id}/tasks`);
   return {};
 }
+
+const editSchema = z.object({
+  taskId: z.string().uuid(),
+  title: z.string().trim().min(1, "Enter a task title").max(200, "Title is too long"),
+  description: z.string().trim().max(5000, "Description is too long").optional(),
+  priority: z.enum(TASK_PRIORITIES),
+  dueDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a valid date")
+    .optional(),
+});
+
+export async function updateTask(
+  taskId: string,
+  _prev: TaskState,
+  formData: FormData
+): Promise<TaskState> {
+  const parsed = editSchema.safeParse({
+    taskId,
+    title: formData.get("title"),
+    description: formData.get("description") || undefined,
+    priority: formData.get("priority"),
+    dueDate: formData.get("dueDate") || undefined,
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  const supabase = await createClient();
+  const { title, description, priority, dueDate } = parsed.data;
+
+  // RLS only allows edits by members of the task's workspace
+  const { data: task, error } = await supabase
+    .from("tasks")
+    .update({
+      title,
+      description: description ?? null,
+      priority,
+      due_date: dueDate ?? null,
+    })
+    .eq("id", parsed.data.taskId)
+    .select("id, project_id")
+    .maybeSingle();
+
+  if (error || !task) return { error: "Couldn't save the task. Try again." };
+
+  revalidatePath(`/projects/${task.project_id}/tasks`);
+  return { success: true };
+}
+
+export async function deleteTask(taskId: string): Promise<{ error?: string }> {
+  const parsed = z.string().uuid().safeParse(taskId);
+  if (!parsed.success) return { error: "Invalid task." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Your session expired. Log in again." };
+
+  const { data: task } = await supabase
+    .from("tasks")
+    .select("id, title, project_id")
+    .eq("id", parsed.data)
+    .maybeSingle();
+  if (!task) return { error: "Task not found." };
+
+  // RLS only lets the task's creator or a workspace owner/admin delete it
+  const { data: deleted, error } = await supabase
+    .from("tasks")
+    .delete()
+    .eq("id", task.id)
+    .select("id");
+
+  if (error || !deleted || deleted.length === 0) {
+    return { error: "Only the task's creator or a workspace owner or admin can delete it." };
+  }
+
+  const { data: project } = await supabase
+    .from("projects")
+    .select("workspace_id")
+    .eq("id", task.project_id)
+    .maybeSingle();
+
+  if (project) {
+    await supabase.from("activity_logs").insert({
+      workspace_id: project.workspace_id,
+      actor_id: user.id,
+      action: "deleted",
+      entity_type: "task",
+      entity_id: task.id,
+      metadata: { title: task.title },
+    });
+  }
+
+  revalidatePath(`/projects/${task.project_id}/tasks`);
+  return {};
+}

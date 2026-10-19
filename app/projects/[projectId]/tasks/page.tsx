@@ -46,7 +46,7 @@ async function TasksContent({ params }: Props) {
   const today = new Date().toISOString().slice(0, 10);
 
   // When the saved data changes, this key changes and the board reloads it
-  const boardKey = tasks.map((t) => `${t.id}:${t.status}`).join("|");
+  const boardKey = tasks.map((t) => `${t.id}:${t.status}:${t.title}:${t.priority}:${t.due_date}:${t.description}`).join("|");
 
   return (
     <div className="grid gap-8">

@@ -13,6 +13,7 @@ import {
 } from "@dnd-kit/core";
 import { updateTaskStatus } from "@/app/projects/[projectId]/tasks/actions";
 import { TaskStatusSelect } from "@/components/tasks/task-status-select";
+import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
 import {
   PRIORITY_LABELS,
   STATUS_LABELS,
@@ -145,7 +146,12 @@ function TaskCard({ task, today }: { task: BoardTask; today: string }) {
           </span>
         )}
       </div>
-      <TaskStatusSelect taskId={task.id} status={task.status} />
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <TaskStatusSelect taskId={task.id} status={task.status} />
+        </div>
+        <EditTaskDialog task={task} />
+      </div>
     </article>
   );
 }
