@@ -1,18 +1,30 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, type ThreeEvent } from "@react-three/fiber";
 import { Billboard, Line, OrbitControls, Text } from "@react-three/drei";
 import { STATUS_COLORS, nearestLinks } from "@/lib/constellation";
 
 export type ConstellationProject = {
   id: string;
   name: string;
+  description: string | null;
   color: string;
   status: string;
   position_x: number;
   position_y: number;
   position_z: number;
+  taskCount: number;
+  doneCount: number;
+  progress: number;
+};
+
+type SceneProps = {
+  projects: ConstellationProject[];
+  hoveredId: string | null;
+  selectedId: string | null;
+  onHover: (id: string | null) => void;
+  onSelect: (id: string) => void;
 };
 
 // True when the computer is set to "reduce motion"
@@ -28,7 +40,7 @@ function usePrefersReducedMotion() {
   );
 }
 
-export default function ConstellationScene({ projects }: { projects: ConstellationProject[] }) {
+export default function ConstellationScene({ projects, hoveredId, selectedId, onHover, onSelect }: SceneProps) {
   const reducedMotion = usePrefersReducedMotion();
   const links = nearestLinks(projects);
 
@@ -57,40 +69,80 @@ export default function ConstellationScene({ projects }: { projects: Constellati
       ))}
 
       {projects.map((project) => (
-        <ProjectNode key={project.id} project={project} />
+        <ProjectNode
+          key={project.id}
+          project={project}
+          hovered={hoveredId === project.id}
+          selected={selectedId === project.id}
+          onHover={onHover}
+          onSelect={onSelect}
+        />
       ))}
 
+      {/* Drift slowly, but hold still while the user is looking at a project */}
       <OrbitControls
         makeDefault
         enableDamping
         minDistance={4}
         maxDistance={30}
-        autoRotate={!reducedMotion}
+        autoRotate={!reducedMotion && !hoveredId && !selectedId}
         autoRotateSpeed={0.3}
       />
     </Canvas>
   );
 }
 
-function ProjectNode({ project }: { project: ConstellationProject }) {
+type NodeProps = {
+  project: ConstellationProject;
+  hovered: boolean;
+  selected: boolean;
+  onHover: (id: string | null) => void;
+  onSelect: (id: string) => void;
+};
+
+function ProjectNode({ project, hovered, selected, onHover, onSelect }: NodeProps) {
   const statusColor = STATUS_COLORS[project.status] ?? "#94a3b8";
+  const highlighted = hovered || selected;
+
+  function handlePointerOver(e: ThreeEvent<PointerEvent>) {
+    e.stopPropagation();
+    onHover(project.id);
+    document.body.style.cursor = "pointer";
+  }
+
+  function handlePointerOut() {
+    onHover(null);
+    document.body.style.cursor = "auto";
+  }
+
+  function handleClick(e: ThreeEvent<MouseEvent>) {
+    // Ignore the click at the end of a rotate-drag
+        if (e.delta > 4) return;
+    e.stopPropagation();
+    onSelect(project.id);
+  }
 
   return (
     <group position={[project.position_x, project.position_y, project.position_z]}>
-      <mesh>
+      <mesh
+        scale={highlighted ? 1.25 : 1}
+        onPointerOver={handlePointerOver}
+        onPointerOut={handlePointerOut}
+        onClick={handleClick}
+      >
         <sphereGeometry args={[0.45, 32, 32]} />
         <meshStandardMaterial
           color={project.color}
           emissive={project.color}
-          emissiveIntensity={0.6}
+          emissiveIntensity={highlighted ? 1 : 0.6}
           roughness={0.35}
         />
       </mesh>
 
       {/* Status ring around the sphere */}
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.7, 0.025, 8, 64]} />
-        <meshBasicMaterial color={statusColor} transparent opacity={0.85} />
+      <mesh rotation={[Math.PI / 2, 0, 0]} scale={selected ? 1.2 : 1}>
+        <torusGeometry args={[0.7, selected ? 0.04 : 0.025, 8, 64]} />
+        <meshBasicMaterial color={statusColor} transparent opacity={selected ? 1 : 0.85} />
       </mesh>
 
       {/* Billboard keeps the label facing the camera as you rotate */}

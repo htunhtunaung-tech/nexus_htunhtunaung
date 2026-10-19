@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createProject } from "./actions";
 import { CreateProjectForm } from "@/components/projects/create-project-form";
 import { Constellation } from "@/components/constellation/constellation";
+import type { ConstellationProject } from "@/components/constellation/constellation-scene";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Props = { params: Promise<{ workspaceId: string }> };
@@ -44,13 +45,46 @@ async function WorkspaceContent({ params }: Props) {
     .maybeSingle();
   if (!workspace) notFound();
 
-  const { data: projects } = await supabase
+  const { data: projectRows } = await supabase
     .from("projects")
     .select("id, name, description, status, color, position_x, position_y, position_z")
     .eq("workspace_id", workspace.id)
     .is("archived_at", null)
     .order("created_at", { ascending: false })
     .limit(100);
+
+  const projects = projectRows ?? [];
+
+  // Count tasks per project for the progress numbers
+  const { data: taskRows } =
+    projects.length > 0
+      ? await supabase
+          .from("tasks")
+          .select("project_id, status")
+          .in(
+            "project_id",
+            projects.map((p) => p.id)
+          )
+          .limit(5000)
+      : { data: [] };
+
+  const counts = new Map<string, { total: number; done: number }>();
+  for (const t of taskRows ?? []) {
+    const c = counts.get(t.project_id) ?? { total: 0, done: 0 };
+    c.total += 1;
+    if (t.status === "done") c.done += 1;
+    counts.set(t.project_id, c);
+  }
+
+  const constellationProjects: ConstellationProject[] = projects.map((p) => {
+    const c = counts.get(p.id) ?? { total: 0, done: 0 };
+    return {
+      ...p,
+      taskCount: c.total,
+      doneCount: c.done,
+      progress: c.total === 0 ? 0 : Math.round((c.done / c.total) * 100),
+    };
+  });
 
   return (
     <div className="grid gap-8">
@@ -60,16 +94,16 @@ async function WorkspaceContent({ params }: Props) {
         </Link>
         <h1 className="mt-2 text-2xl font-semibold">{workspace.name}</h1>
         <p className="mt-1 text-muted-foreground">
-          {projects?.length ?? 0} {projects?.length === 1 ? "project" : "projects"}
+          {projects.length} {projects.length === 1 ? "project" : "projects"}
         </p>
       </header>
 
-      <Constellation projects={projects ?? []} />
+      <Constellation projects={constellationProjects} />
 
       <CreateProjectForm action={createProject.bind(null, workspace.id)} />
 
       <section className="grid gap-3 sm:grid-cols-2">
-        {projects && projects.length > 0 ? (
+        {projects.length > 0 ? (
           projects.map((project) => (
             <Link key={project.id} href={`/projects/${project.id}`}>
               <Card className="h-full transition-colors hover:bg-muted/50">
