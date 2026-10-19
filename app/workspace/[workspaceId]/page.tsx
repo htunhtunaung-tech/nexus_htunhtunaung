@@ -68,7 +68,7 @@ async function WorkspaceContent({ params }: Props) {
       <section className="grid gap-3 sm:grid-cols-2">
         {projects && projects.length > 0 ? (
           projects.map((project) => (
-            <Link key={project.id} href={`/projects/${project.id}/tasks`}>
+            <Link key={project.id} href={`/projects/${project.id}`}>
               <Card className="h-full transition-colors hover:bg-muted/50">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
