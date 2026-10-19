@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -18,6 +19,7 @@ export default function DashboardPage() {
 }
 
 async function DashboardContent() {
+  await connection();
   const supabase = await createClient();
   const {
     data: { user },

@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -42,6 +43,7 @@ export default function TasksPage({ params }: Props) {
 }
 
 async function TasksContent({ params }: Props) {
+  await connection();
   const { projectId } = await params;
   const supabase = await createClient();
   const {

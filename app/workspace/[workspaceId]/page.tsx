@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -26,6 +27,7 @@ export default function WorkspacePage({ params }: Props) {
 }
 
 async function WorkspaceContent({ params }: Props) {
+  await connection();
   const { workspaceId } = await params;
   const supabase = await createClient();
   const {
@@ -66,22 +68,24 @@ async function WorkspaceContent({ params }: Props) {
       <section className="grid gap-3 sm:grid-cols-2">
         {projects && projects.length > 0 ? (
           projects.map((project) => (
-            <Card key={project.id}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span
-                    aria-hidden="true"
-                    className="size-3 rounded-full"
-                    style={{ backgroundColor: project.color }}
-                  />
-                  {project.name}
-                </CardTitle>
-                <CardDescription>
-                  {STATUS_LABELS[project.status] ?? project.status}
-                  {project.description ? ` · ${project.description}` : ""}
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <Link key={project.id} href={`/projects/${project.id}/tasks`}>
+              <Card className="h-full transition-colors hover:bg-muted/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <span
+                      aria-hidden="true"
+                      className="size-3 rounded-full"
+                      style={{ backgroundColor: project.color }}
+                    />
+                    {project.name}
+                  </CardTitle>
+                  <CardDescription>
+                    {STATUS_LABELS[project.status] ?? project.status}
+                    {project.description ? ` · ${project.description}` : ""}
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
           ))
         ) : (
           <p className="text-sm text-muted-foreground sm:col-span-2">
