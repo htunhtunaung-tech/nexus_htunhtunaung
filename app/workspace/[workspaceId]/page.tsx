@@ -98,7 +98,7 @@ async function WorkspaceContent({ params }: Props) {
         </p>
       </header>
 
-      <Constellation projects={constellationProjects} />
+      <Constellation workspaceId={workspace.id} projects={constellationProjects} />
 
       <CreateProjectForm action={createProject.bind(null, workspace.id)} />
 

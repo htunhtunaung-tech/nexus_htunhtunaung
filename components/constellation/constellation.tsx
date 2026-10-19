@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { ConstellationProject } from "./constellation-scene";
+import type { Vec3 } from "./project-node";
+import { resetLayout, updateProjectPosition } from "@/app/workspace/[workspaceId]/position-actions";
 import { STATUS_COLORS, STATUS_LABELS } from "@/lib/constellation";
 import { Button } from "@/components/ui/button";
 
@@ -21,12 +23,24 @@ function progressText(p: ConstellationProject) {
   return `${p.progress}% · ${p.doneCount} of ${p.taskCount} tasks done`;
 }
 
-export function Constellation({ projects }: { projects: ConstellationProject[] }) {
+export function Constellation({
+  workspaceId,
+  projects,
+}: {
+  workspaceId: string;
+  projects: ConstellationProject[];
+}) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
+  const [confirmingReset, setConfirmingReset] = useState(false);
+  const [pending, startTransition] = useTransition();
 
   const hovered = projects.find((p) => p.id === hoveredId) ?? null;
   const selected = projects.find((p) => p.id === selectedId) ?? null;
+
+  // When saved positions change (for example after a reset), start the scene fresh
+  const sceneKey = projects.map((p) => `${p.id}:${p.position_x},${p.position_y},${p.position_z}`).join("|");
 
   // Close the side panel with Esc
   useEffect(() => {
@@ -38,17 +52,59 @@ export function Constellation({ projects }: { projects: ConstellationProject[] }
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [selectedId]);
 
+  function handleMove(id: string, [x, y, z]: Vec3) {
+    setMessage({ text: "Saving position…" });
+    startTransition(async () => {
+      const result = await updateProjectPosition(id, x, y, z);
+      setMessage(result.error ? { text: result.error, error: true } : { text: "Position saved" });
+    });
+  }
+
+  function handleReset() {
+    setConfirmingReset(false);
+    setMessage({ text: "Resetting layout…" });
+    startTransition(async () => {
+      const result = await resetLayout(workspaceId);
+      setMessage(result.error ? { text: result.error, error: true } : { text: "Layout reset" });
+    });
+  }
+
   if (projects.length === 0) return null;
 
   return (
     <section aria-label="Project constellation" className="grid gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {message && (
+          <p role="status" className={`mr-auto text-xs ${message.error ? "text-destructive" : "text-muted-foreground"}`}>
+            {message.text}
+          </p>
+        )}
+        {confirmingReset ? (
+          <>
+            <span className="text-xs text-muted-foreground">Move every planet to an even layout?</span>
+            <Button type="button" size="sm" variant="destructive" disabled={pending} onClick={handleReset}>
+              Yes, reset
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setConfirmingReset(false)}>
+              Cancel
+            </Button>
+          </>
+        ) : (
+          <Button type="button" size="sm" variant="outline" disabled={pending} onClick={() => setConfirmingReset(true)}>
+            Reset layout
+          </Button>
+        )}
+      </div>
+
       <div className="relative h-[420px] overflow-hidden rounded-xl border bg-[#05070a]">
         <ConstellationScene
+          key={sceneKey}
           projects={projects}
           hoveredId={hoveredId}
           selectedId={selectedId}
           onHover={setHoveredId}
           onSelect={setSelectedId}
+          onMove={handleMove}
         />
 
         {/* Hover tooltip */}
@@ -79,13 +135,7 @@ export function Constellation({ projects }: { projects: ConstellationProject[] }
                 <span aria-hidden="true" className="size-3 rounded-full" style={{ backgroundColor: selected.color }} />
                 {selected.name}
               </h2>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                aria-label="Close details"
-                onClick={() => setSelectedId(null)}
-              >
+              <Button type="button" variant="ghost" size="sm" aria-label="Close details" onClick={() => setSelectedId(null)}>
                 ×
               </Button>
             </div>
@@ -123,7 +173,7 @@ export function Constellation({ projects }: { projects: ConstellationProject[] }
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-        <p>Drag to rotate · Scroll to zoom · Right-drag to pan · Click a planet for details</p>
+        <p>Drag a planet to move it · Drag the background to rotate · Scroll to zoom · Click for details</p>
         <ul aria-label="Status colors" className="flex flex-wrap gap-4">
           {Object.entries(STATUS_LABELS).map(([status, label]) => (
             <li key={status} className="flex items-center gap-1.5">

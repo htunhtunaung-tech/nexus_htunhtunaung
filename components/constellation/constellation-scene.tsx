@@ -1,9 +1,10 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import { Canvas, type ThreeEvent } from "@react-three/fiber";
-import { Billboard, Line, OrbitControls, Text } from "@react-three/drei";
-import { STATUS_COLORS, nearestLinks } from "@/lib/constellation";
+import { useState, useSyncExternalStore } from "react";
+import { Canvas } from "@react-three/fiber";
+import { Line, OrbitControls } from "@react-three/drei";
+import { nearestLinks } from "@/lib/constellation";
+import { ProjectNode, type Vec3 } from "./project-node";
 
 export type ConstellationProject = {
   id: string;
@@ -25,6 +26,7 @@ type SceneProps = {
   selectedId: string | null;
   onHover: (id: string | null) => void;
   onSelect: (id: string) => void;
+  onMove: (id: string, position: Vec3) => void;
 };
 
 // True when the computer is set to "reduce motion"
@@ -40,9 +42,30 @@ function usePrefersReducedMotion() {
   );
 }
 
-export default function ConstellationScene({ projects, hoveredId, selectedId, onHover, onSelect }: SceneProps) {
+export default function ConstellationScene({
+  projects,
+  hoveredId,
+  selectedId,
+  onHover,
+  onSelect,
+  onMove,
+}: SceneProps) {
   const reducedMotion = usePrefersReducedMotion();
-  const links = nearestLinks(projects);
+
+  // Live positions, so planets and lines move while dragging
+  const [positions, setPositions] = useState<Record<string, Vec3>>(() =>
+    Object.fromEntries(projects.map((p) => [p.id, [p.position_x, p.position_y, p.position_z] as Vec3]))
+  );
+
+  const placed = projects.map((p) => {
+    const [x, y, z] = positions[p.id] ?? [p.position_x, p.position_y, p.position_z];
+    return { ...p, position_x: x, position_y: y, position_z: z };
+  });
+  const links = nearestLinks(placed);
+
+  function handleDrag(id: string, position: Vec3) {
+    setPositions((current) => ({ ...current, [id]: position }));
+  }
 
   return (
     <Canvas camera={{ position: [0, 2, 14], fov: 50 }} dpr={[1, 2]}>
@@ -68,14 +91,20 @@ export default function ConstellationScene({ projects, hoveredId, selectedId, on
         />
       ))}
 
-      {projects.map((project) => (
+      {placed.map((p) => (
         <ProjectNode
-          key={project.id}
-          project={project}
-          hovered={hoveredId === project.id}
-          selected={selectedId === project.id}
+          key={p.id}
+          id={p.id}
+          name={p.name}
+          color={p.color}
+          status={p.status}
+          position={[p.position_x, p.position_y, p.position_z]}
+          hovered={hoveredId === p.id}
+          selected={selectedId === p.id}
           onHover={onHover}
           onSelect={onSelect}
+          onDrag={handleDrag}
+          onDragEnd={onMove}
         />
       ))}
 
@@ -89,75 +118,5 @@ export default function ConstellationScene({ projects, hoveredId, selectedId, on
         autoRotateSpeed={0.3}
       />
     </Canvas>
-  );
-}
-
-type NodeProps = {
-  project: ConstellationProject;
-  hovered: boolean;
-  selected: boolean;
-  onHover: (id: string | null) => void;
-  onSelect: (id: string) => void;
-};
-
-function ProjectNode({ project, hovered, selected, onHover, onSelect }: NodeProps) {
-  const statusColor = STATUS_COLORS[project.status] ?? "#94a3b8";
-  const highlighted = hovered || selected;
-
-  function handlePointerOver(e: ThreeEvent<PointerEvent>) {
-    e.stopPropagation();
-    onHover(project.id);
-    document.body.style.cursor = "pointer";
-  }
-
-  function handlePointerOut() {
-    onHover(null);
-    document.body.style.cursor = "auto";
-  }
-
-  function handleClick(e: ThreeEvent<MouseEvent>) {
-    // Ignore the click at the end of a rotate-drag
-        if (e.delta > 4) return;
-    e.stopPropagation();
-    onSelect(project.id);
-  }
-
-  return (
-    <group position={[project.position_x, project.position_y, project.position_z]}>
-      <mesh
-        scale={highlighted ? 1.25 : 1}
-        onPointerOver={handlePointerOver}
-        onPointerOut={handlePointerOut}
-        onClick={handleClick}
-      >
-        <sphereGeometry args={[0.45, 32, 32]} />
-        <meshStandardMaterial
-          color={project.color}
-          emissive={project.color}
-          emissiveIntensity={highlighted ? 1 : 0.6}
-          roughness={0.35}
-        />
-      </mesh>
-
-      {/* Status ring around the sphere */}
-      <mesh rotation={[Math.PI / 2, 0, 0]} scale={selected ? 1.2 : 1}>
-        <torusGeometry args={[0.7, selected ? 0.04 : 0.025, 8, 64]} />
-        <meshBasicMaterial color={statusColor} transparent opacity={selected ? 1 : 0.85} />
-      </mesh>
-
-      {/* Billboard keeps the label facing the camera as you rotate */}
-      <Billboard position={[0, 0.95, 0]}>
-        <Text
-          fontSize={0.32}
-          color="#ffffff"
-          anchorX="center"
-          anchorY="bottom"
-          outlineWidth={0.02}
-          outlineColor="#05070a"
-        >
-          {project.name}
-        </Text>
-      </Billboard>
-    </group>
   );
 }
