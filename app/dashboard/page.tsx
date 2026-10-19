@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/app/auth/actions";
@@ -59,15 +60,17 @@ async function DashboardContent() {
         <h2 className="text-lg font-medium">Your workspaces</h2>
         {workspaces && workspaces.length > 0 ? (
           workspaces.map((ws) => (
-            <Card key={ws.id}>
-              <CardHeader>
-                <CardTitle>{ws.name}</CardTitle>
-                <CardDescription>
-                  {ws.owner_id === user.id ? "Owner" : "Member"} · Created{" "}
-                  {new Date(ws.created_at).toLocaleDateString()}
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <Link key={ws.id} href={`/workspace/${ws.id}`}>
+              <Card className="transition-colors hover:bg-muted/50">
+                <CardHeader>
+                  <CardTitle>{ws.name}</CardTitle>
+                  <CardDescription>
+                    {ws.owner_id === user.id ? "Owner" : "Member"} · Created{" "}
+                    {new Date(ws.created_at).toLocaleDateString()}
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
           ))
         ) : (
           <p className="text-sm text-muted-foreground">
