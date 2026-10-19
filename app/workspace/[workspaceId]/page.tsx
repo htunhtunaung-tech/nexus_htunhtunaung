@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createProject } from "./actions";
 import { CreateProjectForm } from "@/components/projects/create-project-form";
+import { Constellation } from "@/components/constellation/constellation";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Props = { params: Promise<{ workspaceId: string }> };
@@ -18,7 +19,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function WorkspacePage({ params }: Props) {
   return (
-    <main className="mx-auto max-w-4xl p-6">
+    <main className="mx-auto max-w-5xl p-6">
       <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
         <WorkspaceContent params={params} />
       </Suspense>
@@ -45,7 +46,7 @@ async function WorkspaceContent({ params }: Props) {
 
   const { data: projects } = await supabase
     .from("projects")
-    .select("id, name, description, status, color")
+    .select("id, name, description, status, color, position_x, position_y, position_z")
     .eq("workspace_id", workspace.id)
     .is("archived_at", null)
     .order("created_at", { ascending: false })
@@ -62,6 +63,8 @@ async function WorkspaceContent({ params }: Props) {
           {projects?.length ?? 0} {projects?.length === 1 ? "project" : "projects"}
         </p>
       </header>
+
+      <Constellation projects={projects ?? []} />
 
       <CreateProjectForm action={createProject.bind(null, workspace.id)} />
 
