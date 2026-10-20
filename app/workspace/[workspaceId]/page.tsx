@@ -92,7 +92,15 @@ async function WorkspaceContent({ params }: Props) {
         <Link href="/dashboard" className="text-sm text-muted-foreground hover:underline">
           ← Dashboard
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">{workspace.name}</h1>
+        <h1 className="mt-2 flex items-center justify-between gap-4 text-2xl font-semibold">
+          {workspace.name}
+          <Link
+            href={`/workspace/${workspace.id}/members`}
+            className="text-sm font-normal text-cyan-400 hover:underline"
+          >
+            Members →
+          </Link>
+        </h1>
         <p className="mt-1 text-muted-foreground">
           {projects.length} {projects.length === 1 ? "project" : "projects"}
         </p>
