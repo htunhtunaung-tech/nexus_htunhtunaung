@@ -13,7 +13,8 @@ import {
 } from "@dnd-kit/core";
 import { updateTaskStatus } from "@/app/projects/[projectId]/tasks/actions";
 import { TaskStatusSelect } from "@/components/tasks/task-status-select";
-import { EditTaskDialog } from "@/components/tasks/edit-task-dialog";
+import { EditTaskDialog } from "@/components/tasks/edit-task-dialog"; 
+import { AssigneeSelect } from "@/components/tasks/assignee-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,7 +33,7 @@ export type BoardTask = {
   description: string | null;
   status: TaskStatus;
   priority: TaskPriority;
-  due_date: string | null;
+  due_date: string | null; assignee_id: string | null;
 };
 
 type DueFilter = "all" | "overdue" | "week" | "none";
@@ -265,6 +266,7 @@ function TaskCard({ task, today }: { task: BoardTask; today: string }) {
       <div className="flex items-center gap-2">
         <div className="min-w-0 flex-1">
           <TaskStatusSelect taskId={task.id} status={task.status} />
+          <AssigneeSelect taskId={task.id} assigneeId={task.assignee_id} />
         </div>
         <EditTaskDialog task={task} />
       </div>

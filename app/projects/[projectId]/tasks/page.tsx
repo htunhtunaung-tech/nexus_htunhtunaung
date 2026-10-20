@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createTask } from "./actions";
 import { CreateTaskForm } from "@/components/tasks/create-task-form";
 import { KanbanBoard, type BoardTask } from "@/components/tasks/kanban-board";
+import { MembersProvider, type Member } from "@/components/tasks/members-context";
 
 type Props = { params: Promise<{ projectId: string }> };
 
@@ -37,38 +38,56 @@ async function TasksContent({ params }: Props) {
 
   const { data } = await supabase
     .from("tasks")
-    .select("id, title, description, status, priority, due_date")
+    .select("id, title, description, status, priority, due_date, assignee_id")
     .eq("project_id", project.id)
     .order("position", { ascending: true })
     .limit(500);
+
+  // Workspace members, for the assignee dropdowns
+  const { data: memberRows } = await supabase
+    .from("workspace_members")
+    .select("user_id, profiles(display_name)")
+    .eq("workspace_id", project.workspace_id)
+    .limit(200);
+
+  const members: Member[] = (memberRows ?? []).map((m) => {
+    const joined = m.profiles as unknown as
+      | { display_name: string | null }
+      | { display_name: string | null }[]
+      | null;
+    const profile = Array.isArray(joined) ? joined[0] ?? null : joined;
+    return { id: m.user_id, name: profile?.display_name ?? "Unnamed member" };
+  });
 
   const tasks = (data ?? []) as BoardTask[];
   const today = new Date().toISOString().slice(0, 10);
 
   // When the saved data changes, this key changes and the board reloads it
-  const boardKey = tasks.map((t) => `${t.id}:${t.status}:${t.title}:${t.priority}:${t.due_date}:${t.description}`).join("|");
+  const boardKey = tasks
+    .map((t) => `${t.id}:${t.status}:${t.title}:${t.priority}:${t.due_date}:${t.description}:${t.assignee_id}`)
+    .join("|");
 
   return (
     <div className="grid gap-8">
       <header>
         <Link
-          href={`/workspace/${project.workspace_id}`}
+          href={`/projects/${project.id}`}
           className="text-sm text-muted-foreground hover:underline"
         >
-          ← Workspace
+          ← Project overview
         </Link>
         <h1 className="mt-2 flex items-center gap-2 text-2xl font-semibold">
           <span aria-hidden="true" className="size-3 rounded-full" style={{ backgroundColor: project.color }} />
           {project.name}
         </h1>
-        <p className="mt-1 text-muted-foreground">
-          {tasks.length} {tasks.length === 1 ? "task" : "tasks"} · Drag cards between columns
-        </p>
+        <p className="mt-1 text-muted-foreground">Drag cards between columns</p>
       </header>
 
       <CreateTaskForm action={createTask.bind(null, project.id)} />
 
-      <KanbanBoard key={boardKey} initialTasks={tasks} today={today} />
+      <MembersProvider members={members}>
+        <KanbanBoard key={boardKey} initialTasks={tasks} today={today} />
+      </MembersProvider>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createProject } from "./actions";
 import { CreateProjectForm } from "@/components/projects/create-project-form";
+import { ActivityFeed } from "@/components/activity/activity-feed";
 import { Constellation } from "@/components/constellation/constellation";
 import type { ConstellationProject } from "@/components/constellation/constellation-scene";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -109,6 +110,7 @@ async function WorkspaceContent({ params }: Props) {
       <Constellation workspaceId={workspace.id} projects={constellationProjects} />
 
       <CreateProjectForm action={createProject.bind(null, workspace.id)} />
+      <ActivityFeed workspaceId={workspace.id} />
 
       <section className="grid gap-3 sm:grid-cols-2">
         {projects.length > 0 ? (
