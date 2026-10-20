@@ -7,6 +7,7 @@ import { createTask } from "./actions";
 import { CreateTaskForm } from "@/components/tasks/create-task-form";
 import { KanbanBoard, type BoardTask } from "@/components/tasks/kanban-board";
 import { MembersProvider, type Member } from "@/components/tasks/members-context";
+import { RealtimeTasks } from "@/components/tasks/realtime-tasks";
 
 type Props = { params: Promise<{ projectId: string }> };
 
@@ -81,6 +82,7 @@ async function TasksContent({ params }: Props) {
           {project.name}
         </h1>
         <p className="mt-1 text-muted-foreground">Drag cards between columns</p>
+        <RealtimeTasks projectId={project.id} taskIds={tasks.map((t) => t.id)} />
       </header>
 
       <CreateTaskForm action={createTask.bind(null, project.id)} />
