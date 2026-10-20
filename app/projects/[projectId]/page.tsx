@@ -117,6 +117,7 @@ async function ProjectContent({ params }: Props) {
         >
           <div className="h-full rounded-full bg-cyan-400" style={{ width: `${progress}%` }} />
         </div>
+        <Link href={"/projects/" + project.id + "/analytics"} className="text-sm text-cyan-400 hover:underline">View analytics →</Link>
         <Button asChild className="justify-self-start">
           <Link href={`/projects/${project.id}/tasks`}>Open task board</Link>
         </Button>
