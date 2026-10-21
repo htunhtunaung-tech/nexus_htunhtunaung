@@ -39,7 +39,8 @@ export function ProjectNode({
   onDragEnd,
 }: Props) {
   const camera = useThree((s) => s.camera);
-  const controls = useThree((s) => s.controls) as unknown as { enabled: boolean } | null;
+  const getState = useThree((s) => s.get); 
+  const setControls = (enabled: boolean) => { const c = getState().controls as unknown as { enabled: boolean } | null; if (c) c.enabled = enabled; };
   const drag = useRef<{ plane: THREE.Plane; offset: THREE.Vector3; last: Vec3 | null } | null>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -57,7 +58,7 @@ export function ProjectNode({
 
     drag.current = { plane, offset: hit.clone().sub(nodePosition), last: null };
     (e.target as unknown as Element).setPointerCapture(e.pointerId);
-    if (controls) controls.enabled = false;
+    setControls(false);
     setDragging(true);
     document.body.style.cursor = "grabbing";
   }
@@ -79,7 +80,7 @@ export function ProjectNode({
     if (!d) return;
     e.stopPropagation();
     (e.target as unknown as Element).releasePointerCapture(e.pointerId);
-    if (controls) controls.enabled = true;
+    setControls(true);
     drag.current = null;
     setDragging(false);
     document.body.style.cursor = "grab";

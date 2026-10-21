@@ -65,7 +65,7 @@ async function DashboardContent() {
 
   const tasks = (taskRows ?? []) as TaskRow[];
   const today = new Date().toISOString().slice(0, 10);
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const weekAgo = new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
   const openTasks = tasks.filter((t) => t.status !== "done");
   const stats = [

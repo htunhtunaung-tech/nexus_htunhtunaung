@@ -1,4 +1,4 @@
-import { Suspense } from "react"; import { PageSkeleton } from "@/components/page-skeleton";
+import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/login-form";
 
 type Props = { searchParams: Promise<{ next?: string }> };

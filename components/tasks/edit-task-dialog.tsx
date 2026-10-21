@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState, useTransition } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { deleteTask, updateTask } from "@/app/projects/[projectId]/tasks/actions";
 import type { BoardTask } from "@/components/tasks/kanban-board";
 import { PRIORITY_LABELS, TASK_PRIORITIES } from "@/lib/tasks";
@@ -22,15 +22,11 @@ const fieldClass =
 
 export function EditTaskDialog({ task }: { task: BoardTask }) {
   const [open, setOpen] = useState(false);
-  const [state, formAction, saving] = useActionState(updateTask.bind(null, task.id), undefined);
+  const [state, formAction, saving] = useActionState(async (prev: Awaited<ReturnType<typeof updateTask>>, formData: FormData) => { const result = await updateTask(task.id, prev, formData); if (result?.success) setOpen(false); return result; }, undefined);
   const [confirming, setConfirming] = useState(false);
   const [deleting, startDelete] = useTransition();
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  // Close the dialog after a successful save
-  useEffect(() => {
-    if (state?.success) setOpen(false);
-  }, [state]);
 
   function handleDelete() {
     setDeleteError(null);
