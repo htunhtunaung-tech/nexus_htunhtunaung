@@ -1,5 +1,5 @@
 import { connection } from "next/server";
-import { Suspense } from "react";
+import { Suspense } from "react"; import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -19,7 +19,7 @@ const ROLE_STYLES: Record<string, string> = {
 export default function MembersPage({ params }: Props) {
   return (
     <main className="mx-auto max-w-3xl p-6">
-      <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <MembersContent params={params} />
       </Suspense>
     </main>

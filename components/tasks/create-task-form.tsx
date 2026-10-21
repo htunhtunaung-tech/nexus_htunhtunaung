@@ -5,7 +5,8 @@ import type { TaskState } from "@/app/projects/[projectId]/tasks/actions";
 import { PRIORITY_LABELS, STATUS_LABELS, TASK_PRIORITIES, TASK_STATUSES } from "@/lib/tasks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Label } from "@/components/ui/label"; 
+import { ActionToast } from "@/components/ui/action-toast";
 
 type Props = {
   action: (prev: TaskState, formData: FormData) => Promise<TaskState>;
@@ -20,6 +21,7 @@ export function CreateTaskForm({ action }: Props) {
   return (
     <form action={formAction} className="grid gap-4 rounded-xl border p-4">
       <h2 className="text-lg font-medium">New task</h2>
+      <ActionToast state={state} success="Task added" />
 
       <div className="grid gap-2">
         <Label htmlFor="task-title">Title</Label>

@@ -1,5 +1,5 @@
 import { connection } from "next/server";
-import { Suspense } from "react";
+import { Suspense } from "react"; import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -11,7 +11,7 @@ type Props = { params: Promise<{ projectId: string }> };
 export default function AnalyticsPage({ params }: Props) {
   return (
     <main className="mx-auto max-w-4xl p-6">
-      <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <AnalyticsContent params={params} />
       </Suspense>
     </main>

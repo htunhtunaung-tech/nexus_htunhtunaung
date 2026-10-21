@@ -1,5 +1,5 @@
 import { connection } from "next/server";
-import { Suspense } from "react";
+import { Suspense } from "react"; import { PageSkeleton } from "@/components/page-skeleton";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -20,7 +20,7 @@ type TaskRow = {
 export default function DashboardPage() {
   return (
     <main className="mx-auto max-w-4xl p-6">
-      <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
+      <Suspense fallback={<PageSkeleton />}>
         <DashboardContent />
       </Suspense>
     </main>

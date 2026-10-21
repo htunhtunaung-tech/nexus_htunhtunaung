@@ -4,7 +4,8 @@ import { useActionState } from "react";
 import type { ProjectState } from "@/app/workspace/[workspaceId]/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Label } from "@/components/ui/label"; 
+import { ActionToast } from "@/components/ui/action-toast";
 
 type Props = {
   action: (prev: ProjectState, formData: FormData) => Promise<ProjectState>;
@@ -19,6 +20,7 @@ export function CreateProjectForm({ action }: Props) {
   return (
     <form action={formAction} className="grid gap-4 rounded-xl border p-4">
       <h2 className="text-lg font-medium">New project</h2>
+      <ActionToast state={state} success="Project created" />
 
       <div className="grid gap-2">
         <Label htmlFor="project-name">Name</Label>
