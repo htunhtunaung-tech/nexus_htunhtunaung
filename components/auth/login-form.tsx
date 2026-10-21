@@ -25,7 +25,7 @@ export function LoginForm({ next }: { next?: string }) {
             <Input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between"><Label htmlFor="password">Password</Label><Link href="/forgot-password" className="text-xs text-muted-foreground underline-offset-4 hover:underline">Forgot password?</Link></div>
             <Input id="password" name="password" type="password" autoComplete="current-password" required />
           </div>
           {state?.error && (
